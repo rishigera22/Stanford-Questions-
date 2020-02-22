@@ -1,0 +1,282 @@
+--Quesiton 1 Find the titles of all movies directed by Steven Spielberg.
+
+SELECT title FROM Movie
+WHERE director = 'Steven Spielberg'
+
+--Question 2 Find all years that have a movie that received a rating of 4 or 5, and sort them in increasing order.
+
+SELECT distinct year FROM 
+Movie m LEFT JOIN rating r
+ON m.mid = r.mid
+
+WHERE Stars > 3
+Order By year asc;      
+
+-- Question 3 Find the titles of all movies that have no ratings.
+
+SELECT m.title FROM
+movie m LEFT JOIN rating r
+ON m.mid = r.mid
+WHERE r.stars IS NULL;
+
+/* Question 4 Some reviewers didn't provide a date with their rating. 
+Find the names of all reviewers who have ratings with a NULL value for the date.
+*/
+
+SELECT n.name
+FROM rating r JOIN reviewer n
+on r.rid = n.rid
+WHERE ratingdate IS NULL
+
+/* Question 5 Write a query to return the ratings data in a more readable format:
+reviewer name, movie title, stars, and ratingDate. Also, sort the data, first by reviewer name,
+then by movie title, and lastly by number of stars.*/
+
+SELECT n.name, m.title,r.stars,r.ratingdate
+
+
+FROM 
+Rating r LEFT Join movie m
+ON r.mid = m.mid 
+LEFT JOIN Reviewer n 
+ON n.rid = r.rid
+
+ORDER BY n.name,m.title,r.stars;
+
+/* Question 6 For all cases where the same reviewer rated the same movie twice and gave it a higher rating the second time, 
+return the reviewer's name and the title of the movie.*/
+
+SELECT 
+c.name, d.title
+FROM rating a JOIN rating b
+on a.mid = b.mid
+JOIN reviewer c
+on a.rid = c.rid
+JOIN movie d
+on a.mid = d.mid
+
+WHERE a.mid = b.mid
+AND a.rid = b.rid
+AND a.ratingdate < b.ratingdate
+AND a.stars < b.stars;
+
+/* Question 7 For each movie that has at least one rating, 
+find the highest number of stars that movie received. Return the movie title and number of stars. 
+Sort by movie title.*/
+
+SELECT m.title,max(stars)
+FROM rating n JOIN Movie m
+on n.mid = m.mid
+GROUP BY n.mid
+ORDER BY m.title;
+
+/* Question 8 For each movie, return the title and the 'rating spread', that is, 
+the difference between highest and lowest ratings given to that movie. Sort by rating spread from highest to lowest,
+then by movie title.*/
+
+SELECT m.title, MAX(r.STARS)- MIN(r.Stars) AS spread
+
+FROM rating r JOIN MOVIE m
+ON r.mid = m.mid
+
+GROUP BY m.title 
+order by spread desc
+
+/* Question 9 Find the difference between the average rating of movies released before 1980 
+and the average rating of movies released after 1980. (Make sure to calculate the average rating for each movie, 
+then the average of those averages for movies before 1980 and movies after. Don't just calculate the overall average rating before 
+and after 1980.)*/
+
+SELECT SUM(c.ratingaverage) FROM (
+
+SELECT AVG(a.ratingaverage) * -1 AS ratingaverage
+
+FROM 
+
+(SELECT AVG(r.stars) AS ratingaverage
+FROM rating r JOIN movie m
+on r.mid = m.mid
+WHERE year >1980
+GROUP BY m.mid) a
+
+UNION
+
+SELECT AVG(b.ratingAverage) FROM (
+
+SELECT AVG(r.stars) AS ratingaverage
+FROM rating r JOIN movie m
+on r.mid = m.mid
+WHERE year <1980
+GROUP BY m.mid) b) c
+
+-- Question 11 Find the names of all reviewers who rated Gone with the Wind.
+
+SELECT name from Reviewer
+
+WHERE RID IN (
+
+
+SELECT RID FROM rating 
+where MID = (SELECT MID FROM movie
+WHERE title = 'Gone with the Wind'));
+
+/* Question 12 For any rating where the reviewer is the same as the director of the movie,
+return the reviewer name, movie title, and number of stars*/
+
+SELECT n.name, m.title, r.stars  FROM
+
+Rating r JOIN Reviewer n
+ON r.rid = n.rid
+
+JOIN MOVIE m
+ON m.MID = r.mid
+
+WHERE m.director = n.name;
+
+/* Question 13 Return all reviewer names and movie names together in a single list, alphabetized. 
+Sorting by the first name of the reviewer and first word in the title is fine; no need for special processing 
+on last names or removing "The".)*/
+
+SELECT name
+FROM reviewer
+
+UNION
+
+SELECT title
+From Movie;
+
+-- Question 14 Find the titles of all movies not reviewed by Chris Jackson.
+
+SELECT title from Movie
+
+Except
+
+
+SELECT m.title
+
+FROM movie m JOIN rating r
+ON m.mid = r.mid
+
+JOIN reviewer n
+
+ON r.rid = n.rid
+WHERE n.name ='Chris Jackson';
+
+/* Question 15 For all pairs of reviewers such that both reviewers gave a rating to the same movie, 
+return the names of both reviewers. Eliminate duplicates, don't pair reviewers with themselves, 
+and include each pair only once. For each pair, return the names in the pair in alphabetical order.*/
+
+SELECT distinct c.name, d.name
+FROM rating a JOIN rating b
+on a.mid = b.mid
+JOIN reviewer c
+on a.rid = c.rid
+JOIN reviewer d
+on b.rid = d.rid
+WHERE a.rid <> b.rid
+and c.name < d.name
+
+/* Question 16 For each rating that is the lowest (fewest stars) currently in the database, 
+return the reviewer name, movie title, and number of stars */
+
+SELECT n.name, m.title, r.stars 
+
+FROM Rating r
+
+JOIN Reviewer n
+on r.rid = n.rid
+
+JOIN Movie m
+
+on r.mid = m.mid
+
+WHERE stars = (SELECT MIN (stars)
+FROM Rating)
+
+/* Question 17 List movie titles and average ratings, from highest-rated to lowest-rated. 
+If two or more movies have the same average rating, list them in alphabetical order.*/
+
+SELECT m.title, AVG(r.stars)
+
+
+FROM rating r JOIN movie m
+ON r.mid = m.mid
+
+
+GROUP BY r.mid
+ORDER BY AVG(r.stars) desc, m.title 
+
+-- Question 18 Find the names of all reviewers who have contributed three or more ratings.
+
+SELECT n.name FROM Reviewer n
+
+WHERE n.rid IN (SELECT r.rid
+FROM rating r
+Group by r.rid
+HAVING COUNT(r.rid) >=3)
+
+/* Question 19 Some directors directed more than one movie. For all such directors, 
+return the titles of all movies directed by them, along with the director name. 
+Sort by director name, then movie title. (As an extra challenge, try writing the query both with and without COUNT.)*/
+
+SELECT title, director FROM MOVIE
+where director IN (
+
+SELECT director FROM MOVIE m
+GROUP BY m.director
+HAVING COUNT(m.director) > 1)
+
+ORDER BY director, title
+
+-- Question 20 Find the movie(s) with the highest average rating. Return the movie title(s) and average rating. 
+
+SELECT m.title, a.rank FROM 
+
+(SELECT mid, AVG(STARS) AS RANK FROM rating
+GROUP BY mid ORDER BY rank asc) a JOIN movie m on a.mid = m.mid
+
+WHERE a.rank = (
+
+SELECT MAX(a.rank) FROM 
+
+
+(SELECT mid, AVG(STARS) AS RANK FROM rating
+GROUP BY mid ORDER BY rank asc) a JOIN movie m on a.mid = m.mid);
+
+-- Question 21 Find the movie(s) with the lowest average rating. Return the movie title(s) and average rating. 
+
+SELECT m.title, a.rank FROM 
+
+(SELECT mid, AVG(STARS) AS RANK FROM rating
+GROUP BY mid ORDER BY rank asc) a JOIN movie m on a.mid = m.mid
+
+WHERE a.rank = (
+
+SELECT MIN(a.rank) FROM 
+
+(SELECT mid, AVG(STARS) AS RANK FROM rating
+GROUP BY mid ORDER BY rank asc) a JOIN movie m on a.mid = m.mid);
+
+-- Question 22
+
+/*For each director, return the director's name together with the title(s) of the movie(s) they directed that received the 
+highest rating among all of their movies, and the value of that rating. Ignore movies whose director is NULL.*/
+
+SELECT a.director, a.title, a.rating FROM 
+
+(SELECT m.title, m.director, max(r.stars) AS rating, m.director||max(r.stars) AS COMBINATION
+FROM movie m JOIN rating r 
+on m.mid = r.mid
+WHERE m.director IS NOT NULL
+GROUP BY m.title, m.director) a JOIN 
+
+(SELECT m.director, max(r.stars), m.director||max(r.stars) AS COMBINATION
+FROM movie m JOIN rating r 
+on m.mid = r.mid
+WHERE m.director IS NOT NULL
+GROUP BY m.director) b
+
+ON a.combination = b.combination
+
+
+
